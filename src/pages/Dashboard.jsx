@@ -5,20 +5,23 @@ import { Droplet, Zap, HeartPulse, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StatsOverview from '../components/dashboard/StatsOverview';
 import EmergencyAlert from '../components/dashboard/EmergencyAlert';
+import HospitalMap from '../components/dashboard/HospitalMap';
 
 const getRank = (count) => {
   if (count >= 20) return 'Platinum';
   if (count >= 10) return 'Gold';
-  if (count >= 5)  return 'Silver';
+  if (count >= 5) return 'Silver';
   return 'Bronze';
 };
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [requests,     setRequests]     = useState([]);
-  const [history,      setHistory]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
+  const [requests, setRequests] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [respondingId, setRespondingId] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const [selectedHospital, setSelectedHospital] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -51,7 +54,7 @@ const Dashboard = () => {
   };
 
   const filteredRequests = requests.filter(r => r.blood_group === user?.blood_group);
-  const livesImpacted    = history.length * 3;
+  const livesImpacted = history.length * 3;
 
   if (loading) {
     return (
@@ -96,13 +99,20 @@ const Dashboard = () => {
       </div>
 
       {/* ─── Stats ──────────────────────────────────────────────────── */}
-      <StatsOverview stats={{
-        total:    history.length,
-        lastDate: history[0]?.donated_at
-          ? new Date(history[0].donated_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-          : null,
-        rank:     getRank(history.length),
-      }} />
+      <StatsOverview
+        stats={{
+          total: history.length,
+          lastDate: history[0]?.donated_at
+            ? new Date(history[0].donated_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+            : null,
+          rank: getRank(history.length),
+        }}
+        onLocationClick={() => {
+          const target = filteredRequests[0] || requests[0] || null;
+          setSelectedHospital(target);
+          setShowMap(true);
+        }}
+      />
 
       {/* ─── Live Alerts ────────────────────────────────────────────── */}
       <section className="space-y-4">
@@ -142,6 +152,13 @@ const Dashboard = () => {
           </div>
         )}
       </section>
+
+      {showMap && (
+        <HospitalMap
+          hospital={selectedHospital}
+          onClose={() => setShowMap(false)}
+        />
+      )}
     </div>
   );
 };
